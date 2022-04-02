@@ -1,0 +1,28 @@
+﻿@inject NavigationManager NavigationManager
+@inject ILocalStorageService LocalStorage
+@inject AuthenticationStateProvider AuthStateProvider
+@inject HttpClient Http
+
+<AuthorizeView>
+    <NotAuthorized>
+        <button @onclick="Login">Login</button>
+    </NotAuthorized>
+    <Authorized>
+        <button @onclick="Logout">Logout</button>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private void Login()
+    {
+        NavigationManager.NavigateTo("login");   
+    }
+    private async void Logout()
+    {
+        await LocalStorage.RemoveItemAsync("token");
+        await AuthStateProvider.GetAuthenticationStateAsync();
+
+        // Passing true here force reloads the app
+        NavigationManager.NavigateTo("", true);
+    }
+}

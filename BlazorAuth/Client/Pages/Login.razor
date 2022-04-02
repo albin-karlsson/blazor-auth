@@ -1,0 +1,45 @@
+﻿@page "/login"
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
+
+<h3>Login</h3>
+
+@if(!String.IsNullOrEmpty(error))
+{
+    <em>@error</em>
+}
+
+<EditForm Model="user" OnSubmit="HandleLogin">
+    <label for="username">Username:</label>
+    <InputText id="username" @bind-Value="user.Username" placeholder="Username"></InputText>
+    <label for="password">Password:</label>
+    <InputText id="password" @bind-Value="user.Password" placeholder="Password" type="password"></InputText>
+    <button class="btn btn-primary" type="submit">Log in</button>
+</EditForm>
+
+@code {
+    private UserDto user = new();
+    private string error = String.Empty;
+
+    private async Task HandleLogin()
+    {
+        var result = await Http.PostAsJsonAsync<UserDto>("api/auth", user);
+
+        if(result.IsSuccessStatusCode)
+        {
+            var token = await result.Content.ReadAsStringAsync();
+
+            await LocalStorage.SetItemAsync("token", token);
+
+            await AuthStateProvider.GetAuthenticationStateAsync();
+
+            NavigationManager.NavigateTo("authorization");
+        }
+        else
+        {
+            error = await result.Content.ReadAsStringAsync(); 
+        }
+    }
+}

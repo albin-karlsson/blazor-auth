@@ -1,0 +1,73 @@
+﻿@page "/authorization"
+@using System.Security.Claims
+@using Newtonsoft.Json
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ILocalStorageService LocalStorage
+@inject HttpClient Http
+@attribute [Authorize]
+
+<h3>You are authorized</h3>
+
+@if(adminData != null)
+{
+    @foreach(var data in adminData)
+    {
+        <em>@data</em>
+        <hr />
+    }
+}
+
+<AuthorizeView Roles="Admin">
+    <NotAuthorized>
+        <span>User authorized as a normal member!</span>
+        <button class="btn btn-primary" @onclick="MakeAdmin">Make me an admin</button>
+    </NotAuthorized>
+    <Authorized>
+        <span>You're an admin!</span>
+    </Authorized>
+</AuthorizeView>
+
+
+@if(admin) {
+    <button @onclick="DoAdminStuff">Do admin stuff</button>
+}
+
+@code {
+    private bool admin;
+    private string[]? adminData; 
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        var user = authState.User;
+        var userName = user.Identity.Name;
+        admin = user.Claims.Any(c => c.Value == "Admin");
+    }
+
+    private async Task MakeAdmin()
+    {
+        var token = await LocalStorage.GetItemAsStringAsync("token");
+
+        TokenDto t = new()
+        {
+            Token = token.Replace("\"", "")
+        };
+
+        var response = await Http.PostAsJsonAsync<TokenDto>("api/auth/admin", t);
+
+        var newToken = await response.Content.ReadAsStringAsync();
+
+        await LocalStorage.SetItemAsStringAsync("token", newToken);
+
+        await AuthStateProvider.GetAuthenticationStateAsync();
+    }
+
+    private async Task DoAdminStuff()
+    {
+        var response = await Http.GetAsync("api/data");
+        var strResponse = await response.Content.ReadAsStringAsync();
+        adminData = JsonConvert.DeserializeObject<string[]>(strResponse);
+    }
+}
