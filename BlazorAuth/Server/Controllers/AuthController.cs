@@ -59,7 +59,7 @@ namespace BlazorAuth.Server.Controllers
 
             if (createUserResult.Succeeded)
             {
-                return Ok("User created");
+                return Ok(newUser.JwtToken);
             }
             else
             {
